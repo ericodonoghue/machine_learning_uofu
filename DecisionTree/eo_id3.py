@@ -4,6 +4,8 @@ import pandas as pd
 import math
 import sys
 
+from pandas.core.indexing import is_nested_tuple
+
 class Node:
     def __init__(self, branch_value=None, split_attribute=None, depth=0, label=None, median=0):
         self.branch_value = branch_value
@@ -327,7 +329,7 @@ def generate_report_bank_no_missing():
                   'previous': "numeric",
                   'poutcome': "categorical"}
 
-    print("BANK")
+    print("BANK treat unknown as not missing")
     # read in training data into a pandas data frame and set col names
     train = pd.read_csv('bank/train.csv')
     train.columns = columns
@@ -351,6 +353,12 @@ def generate_report_bank_no_missing():
             p = round(np.mean(predictions == train['label']), 4)
             print(f"train: {p} {h} {d}")
             print()
+
+
+def replace_unknowns(column_name, train):
+    c = train[column_name].value_counts().sort_values(ascending=False).index.tolist()
+    if (c[0] == "unknown"): c[0] = c[1]
+    train.replace({column_name: 'unknown'}, c[0], inplace=True)
 
 def generate_report_bank_missing_most_common():
 
@@ -397,7 +405,7 @@ def generate_report_bank_missing_most_common():
                   'previous': "numeric",
                   'poutcome': "categorical"}
 
-    print("BANK")
+    print("BANK fill in unknown with most common value")
     # read in training data into a pandas data frame and set col names
     train = pd.read_csv('bank/train.csv')
     train.columns = columns
@@ -406,11 +414,10 @@ def generate_report_bank_missing_most_common():
     test = pd.read_csv('bank/test.csv')
     test.columns = columns
 
-    # predict using unknown as a missing value, filling in with most common value of the attribute
-    c = train['poutcome'].value_counts().sort_values(ascending=False)
-    print(c)
-    
-    train.replace({'poutcome': 'unknown'}, "failure")
+    # replace values of unknown in columns that can be unknown
+    for column in ["job", "education", "contact", "poutcome"]:
+        replace_unknowns(column, train)
+
     for h in ['IG','ME','GI']:
         for d in range(1,17):
             gain_type = h
@@ -427,8 +434,8 @@ def generate_report_bank_missing_most_common():
             print()
 
 
-#generate_report_car()
-#generate_report_bank_no_missing()
+generate_report_car()
+generate_report_bank_no_missing()
 generate_report_bank_missing_most_common()
 
 sys.exit(0)
