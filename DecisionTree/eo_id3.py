@@ -212,25 +212,23 @@ def ID3(S, attributes, branch_value, depth):
 
 def Predict(root_node, test):
     results = []
-    i = 1
     for row in test.itertuples(index=False):
         node = root_node
         while node.split_attribute:
             for child in node.children:
-                if (child.branch_value == "below_avg"):
-                    if (node.median > getattr(row, node.split_attribute)):
-                        node = child
-                        break
-                elif (child.branch_value == "above_avg"):
+                if (child.branch_value == "above_avg"):
                     if (node.median <= getattr(row, node.split_attribute)):    
                        node = child
-                    break    
+                    break   
+                elif (child.branch_value == "below_avg"):
+                    if (node.median > getattr(row, node.split_attribute)):
+                        node = child
+                        break 
                 elif child.branch_value == getattr(row, node.split_attribute):
                     node = child
                     break
 
         results.append(node.label)
-        i += 1
 
     return results
 
@@ -355,10 +353,11 @@ def generate_report_bank_no_missing():
             print()
 
 
-def replace_unknowns(column_name, train):
-    c = train[column_name].value_counts().sort_values(ascending=False).index.tolist()
-    if (c[0] == "unknown"): c[0] = c[1]
-    train.replace({column_name: 'unknown'}, c[0], inplace=True)
+def replace_unknowns(column_name, data):
+    c = data[column_name].value_counts().sort_values(ascending=False).index.tolist()
+    if (c[0] == "unknown"): 
+        c[0] = c[1]
+    data.replace({column_name: 'unknown'}, c[0], inplace=True)
 
 def generate_report_bank_missing_most_common():
 
@@ -372,22 +371,23 @@ def generate_report_bank_missing_most_common():
 
     labels = ['no', 'yes']
     columns = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day', 'month', 'duration', 'campaign', 'pdays', 'previous', 'poutcome', 'label']
-    attr_values = { 'age': "numeric",
-                  'job': ["admin.","unknown","unemployed","management","housemaid","entrepreneur","student", "blue-collar","self-employed","retired","technician","services"],
-                  'marital': ["married","divorced","single"],
-                  'education': ["unknown","secondary","primary","tertiary"],
-                  'default': ["yes","no"],
-                  'balance': "numeric",
-                  'housing': ["yes","no"],
-                  'loan': ["yes","no"],
-                  'contact': ["unknown","telephone","cellular"],
-                  'day': "numeric",
-                  'month': ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
-                  'duration': "numeric",
-                  'campaign': "numeric",
-                  'pdays': "numeric",
-                  'previous': "numeric",
-                  'poutcome': ["unknown","other","failure","success"]}
+    attr_values = {'age': [""],
+                'job': ["admin.", "unknown", "unemployed", "management", "housemaid", "entrepreneur", "student",
+                        "blue-collar", "self-employed", "retired", "technician", "services"],
+                'marital': ["married", "divorced", "single"],
+                'education': ["unknown", "secondary", "primary", "tertiary"],
+                'default': ["yes", "no"],
+                'balance': [""],
+                'housing': ["yes", "no"],
+                'loan': ["yes", "no"],
+                'contact': ["unknown", "telephone", "cellular"],
+                'day': [],
+                'month': ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
+                'duration': [],
+                'campaign': [],
+                'pdays': [],
+                'previous': [],
+                'poutcome': ["unknown", "other", "failure", "success"]}
     attr_type = { 'age': "numeric",
                   'job': "categorical",
                   'marital': "categorical",
@@ -414,9 +414,13 @@ def generate_report_bank_missing_most_common():
     test = pd.read_csv('bank/test.csv')
     test.columns = columns
 
+    print(test)
     # replace values of unknown in columns that can be unknown
-    for column in ["job", "education", "contact", "poutcome"]:
+    for column in columns:
         replace_unknowns(column, train)
+    #for column in columns:
+        #replace_unknowns(column, test)
+    print(test)
 
     for h in ['IG','ME','GI']:
         for d in range(1,17):
