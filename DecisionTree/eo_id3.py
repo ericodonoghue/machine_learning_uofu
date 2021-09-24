@@ -414,13 +414,11 @@ def generate_report_bank_missing_most_common():
     test = pd.read_csv('bank/test.csv')
     test.columns = columns
 
-    print(test)
     # replace values of unknown in columns that can be unknown
     for column in columns:
         replace_unknowns(column, train)
     #for column in columns:
         #replace_unknowns(column, test)
-    print(test)
 
     for h in ['IG','ME','GI']:
         for d in range(1,17):
