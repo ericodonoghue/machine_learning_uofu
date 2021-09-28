@@ -1,18 +1,22 @@
 import numpy as np
-from numpy.core.fromnumeric import shape
 import pandas as pd
 import math
 import sys
 
-from pandas.core.indexing import is_nested_tuple
+# Imports all the collumn and attribute data as dictionaires from another python file
+from formatted_data import car_attribute_types, car_columns, car_attribute_values, car_labels, bank_attribute_types, bank_columns, bank_attribute_values, bank_labels
+
+columns = []
+attribute_values = {}
+attribute_types = {}
+labels = []
 
 class Node:
-    def __init__(self, branch_value=None, split_attribute=None, depth=0, label=None, median=0):
+    def __init__(self, branch_value=None, split_attribute=None, label=None, median=0):
         self.branch_value = branch_value
         self.children = []
         self.split_attribute = split_attribute
         self.label = label
-        self.depth = depth
         self.median = median
 
 
@@ -22,7 +26,6 @@ def ig_gain(S, A):
         before_split_entropy -= p * math.log2(p+1e-8)
 
     after_split_entropy = 0
-
     if (attr_type[A] == 'categorical'):
         for a_val in attr_values[A]:
             sv = S[S[A] == a_val]
@@ -30,7 +33,8 @@ def ig_gain(S, A):
             for l_val in labels:
                 if sv.shape[0] == 0: continue
                 r = sv[sv['label'] == l_val].shape[0]
-                sv_entropy -= (r / sv.shape[0]) * math.log2((r / sv.shape[0]) + 1e-8)
+                if (r == 0): continue
+                sv_entropy -= (r / sv.shape[0]) * math.log2((r / sv.shape[0]))
 
             after_split_entropy += sv_entropy * (sv.shape[0] / S[A].shape[0])
     else:
@@ -163,7 +167,7 @@ def best_split_attribute(S, attributes):
 # because we are using pandas data frames, S will also contain the the label (target attribute) information
 def ID3(S, attributes, branch_value, depth):
     # Create root node for the current subtree
-    root = Node(branch_value=branch_value, depth=depth+1)
+    root = Node(branch_value=branch_value)
 
     # base case: all labels are same - return a leaf node (root of current subtree) with the label
     label_arr = S['label'].to_numpy()
@@ -172,7 +176,7 @@ def ID3(S, attributes, branch_value, depth):
         return root
 
     # base case: attributes is empty - return a leaf node (root of current subtree) with most common label
-    if len(attributes) == 0 or root.depth >= max_depth:
+    if len(attributes) == 0 or depth >= max_depth:
         root.label = S['label'].mode()[0]
         return root
 
@@ -185,24 +189,23 @@ def ID3(S, attributes, branch_value, depth):
     if (attr_type[A] == 'categorical'):
         for v in attr_values[A]:
             # because branchs are stored in the child we do not add a branch here
-
             Sv = S[S[A] == v] # get all of the rows in which A has the value of v
 
             if Sv.shape[0] == 0:
-                root.children.append( Node(branch_value=v, label=S['label'].mode()[0], depth=root.depth+1) ) 
+                root.children.append( Node(branch_value=v, label=S['label'].mode()[0]) ) 
             else:
-                root.children.append( ID3(Sv, [a for a in attributes if a != A], v, root.depth) ) # recursive call
+                root.children.append( ID3(Sv, [a for a in attributes if a != A], v, depth+1) ) # recursive call
     else:
         median = np.median(S[A])
         Sv_b = S[S[A] <= median]
         Sv_a = S[S[A] > median]
         root.median = median
         if Sv_b.shape[0] == 0:
-            root.children.append( Node(branch_value="below_avg", label=S['label'].mode()[0], median=median) )
+            root.children.append( Node(branch_value="below_avg", label=S['label'].mode()[0]) )
         else:
             root.children.append( ID3(Sv_b, [a for a in attributes if a != A], "below_avg", depth + 1) )
         if Sv_a.shape[0] == 0:
-            root.children.append( Node(branch_value="above_avg", label=S['label'].mode()[0], median=median) )
+            root.children.append( Node(branch_value="above_avg", label=S['label'].mode()[0]) )
         else:
             root.children.append( ID3(Sv_a, [a for a in attributes if a != A], "above_avg", depth + 1) )
 
@@ -218,8 +221,8 @@ def Predict(root_node, test):
             for child in node.children:
                 if (child.branch_value == "above_avg"):
                     if (node.median <= getattr(row, node.split_attribute)):    
-                       node = child
-                    break   
+                        node = child
+                        break   
                 elif (child.branch_value == "below_avg"):
                     if (node.median > getattr(row, node.split_attribute)):
                         node = child
@@ -436,7 +439,7 @@ def generate_report_bank_missing_most_common():
             print()
 
 
-generate_report_car()
+#generate_report_car()
 generate_report_bank_no_missing()
 generate_report_bank_missing_most_common()
 
