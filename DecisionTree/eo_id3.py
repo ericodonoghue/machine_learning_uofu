@@ -344,7 +344,7 @@ def generate_report_bank_no_missing():
         for d in range(1,17):
             gain_type = h
             max_depth = d
-            id3_tree = ID3(train, columns[:-1], None, -1)
+            id3_tree = ID3(train, columns[:-1], None, 0)
 
             predictions = Predict(id3_tree, test)
             p = round(np.mean(predictions == test['label']), 4)
@@ -352,7 +352,7 @@ def generate_report_bank_no_missing():
 
             predictions = Predict(id3_tree, train)
             p = round(np.mean(predictions == train['label']), 4)
-            print(f"train: {p} {h} {d}")
+            print(f"train: {p} {gain_type} {max_depth}")
             print()
 
 
@@ -427,7 +427,7 @@ def generate_report_bank_missing_most_common():
         for d in range(1,17):
             gain_type = h
             max_depth = d
-            id3_tree = ID3(train, columns[:-1], None, -1)
+            id3_tree = ID3(train, columns[:-1], None, 0)
 
             predictions = Predict(id3_tree, test)
             p = round(np.mean(predictions == test['label']), 4)
@@ -435,7 +435,7 @@ def generate_report_bank_missing_most_common():
 
             predictions = Predict(id3_tree, train)
             p = round(np.mean(predictions == train['label']), 4)
-            print(f"train: {p} {h} {d}")
+            print(f"train: {p} {gain_type} {max_depth}")
             print()
 
 
