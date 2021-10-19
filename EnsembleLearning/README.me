@@ -1,0 +1,7 @@
+Based on input, run.sh will either run AdaBoost, BaggedTrees, or RandomForests to learn models and output their accuracy over 500 values of T. 
+If no input is specified no files are run. The models are learned using the bank data included in this repository. For random forests and 
+bagged trees after finshing learning the model and printing the test and train accuracy it will print the bias/var for single tree learners vs bagged/random learners
+
+./run.sh 0 - eo_AdaBoost.py
+./run.sh 1 - eo_BaggedTrees.py
+./run.sh 2 - eo_RandomForests.py
