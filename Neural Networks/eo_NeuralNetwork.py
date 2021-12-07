@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
-from scipy.special import expit as e
+from scipy.special import expit as sigmoid
+import torch
+import torch.nn as nn
+
+ #region neural network 
 
 def forward(input, z, w):
     z[0] = input
@@ -8,7 +12,7 @@ def forward(input, z, w):
         w_i = w[i] # get the weights for the current layer 
         z_i = z[i - 1].reshape([-1,1])
         s = w_i @ z_i # see q2 for calculation
-        z[i][:-1,:] = e(s) # sigmoid function for calculating z current z value
+        z[i][:-1,:] = sigmoid(s) # sigmoid function for calculating z current z value
 
     # mutliply the weights right below the output node with the nodes at layer 2 for the y calculation (see q2/q3 written)
     z[3] = w[3] @ z[3 - 1] 
@@ -209,8 +213,117 @@ def run_neural_network():
         print()
 
     return
+
+#endregion
     
+
+#region pytorch neural network
+
+# https://pytorch.org/tutorials/beginner/blitz/neural_networks_tutorial.html
+class Net(nn.Module):
+    
+    def __init__(self, w, d, T=1000, activation_func=True):
+        super(Net, self).__init__()      
+        self.T = T          
+
+        # different intilizations depending on activation function
+        self.inital_weights = nn.init.xavier_normal_ if not activation_func else nn.init.kaiming_uniform_ 
+
+        def init_weights(model):
+            if isinstance(model, nn.Linear):
+                self.inital_weights(model.weight)
+                torch.nn.init.ones_(model.bias)
+
+        # generate linear layers based off depth and width
+        linear_layers = [nn.Linear(5, w), nn.ReLU() if activation_func else nn.Tanh()]
+        for _ in range(d-1):
+            linear_layers.append(nn.Linear(w, w))
+            linear_layers.append(nn.ReLU() if activation_func else nn.Tanh())
+        linear_layers.append(nn.Linear(w, 1))
+
+        self.model = nn.Sequential(*linear_layers)
+
+        self.model.apply(init_weights)
+
+    def forward(self, x):    
+        input_x = np.float32(x.copy())           
+        output = torch.from_numpy(input_x)
+        output.requires_grad = True        
+        return self.model(output)
+            
+
+    def train(self, train_x, train_y):
+        train_y = np.float32(train_y.copy())
+        train_y = torch.from_numpy(train_y)
+        criterion = nn.MSELoss()
+        optimizer = torch.optim.Adam(self.parameters()) # use Adam 
+        
+        for _ in range(self.T): # epochs
+            optimizer.zero_grad()
+            output = self.forward(train_x) # forward prop
+            loss = criterion(output, train_y)
+            loss.backward() # back prop
+            optimizer.step()
+
+
+def neural_network_pytorch(train, test, w, d, function):
+    train_y = train.label.values.reshape(-1, 1)
+    train_x = train.drop(columns=['label'])
+    test_y = test.label.values.reshape(-1, 1)
+    test_x = test.drop(columns=['label'])
+
+    model = Net(w=w, d=d, activation_func=function)
+    model.train(train_x.values.reshape((-1, train_x.shape[1])), train_y)
+
+    train_predictions = model.forward(train_x).detach().numpy()
+    for i in range(0, len(train_predictions)):
+        train_predictions[i] = 1 if train_predictions[i] > 0.0 else -1
+
+    test_predictions = model.forward(test_x).detach().numpy()
+    for i in range(0, len(test_predictions)):
+        test_predictions[i] = 1 if test_predictions[i] > 0.0 else -1
+
+    return np.mean(train_predictions == train_y), np.mean(test_predictions == test_y)
+
+def run_neural_network_pytorch():
+    columns = ['variance','skewness','curtosis','entropy','label']
+
+    train = pd.read_csv("bank-note/train.csv", header=None)
+    train.columns = columns
+    bias_fold_in = [1]*train.shape[0]
+    train.insert(0, "bias", bias_fold_in)
+    train.label.replace(0, -1, inplace=True)
+
+    test = pd.read_csv("bank-note/test.csv", header=None)
+    test.columns = columns
+    bias_fold_in = [1]*test.shape[0]
+    test.insert(0, "bias", bias_fold_in)
+    test.label.replace(0, -1, inplace=True)
+
+    activation_functions = [True, False] # true -> ReLU, false -> tahn
+    depths = [3, 5, 9]
+    widths = [5, 10, 25, 50, 100]
+
+    print("Pytorch Neural Network Predictions")
+    for function in activation_functions:
+        if (function):
+            print("Activation Function: ReLU")
+        else:
+            print("Activation Function: tahn")
+        for d in depths:
+            print(f"Depth: {d}")
+            for w in widths: 
+                print(f"Width: {w}")
+                train_e, test_e = neural_network_pytorch(train, test, w, d, function)
+                print(f"Average Train Prediction Error: {np.around(1-train_e,4)}")
+                print(f"Average Test Prediction Error: {np.around(1-test_e,4)}")
+                print()
+
+    return
+#endregion
+
 def main():
     run_neural_network()
+    run_neural_network_pytorch()
 
 main()

@@ -1,4 +1,10 @@
-run.sh will run two versions of a 4 layer neural network with widths from [5,10,25,50,100]: 
-initializing the edge weights with random numbers generated from the standard Gaussian distribution, initializing the edge weights to zero 
+run.sh will run two versions of a neural network. One implemented from scratch and one implemented using pytorch. 
 
+The neural network from scratch is a 4 layer neural network with two weight initialization methods and with widths from [5,10,25,50,100]: 
+initializing the edge weights with random numbers generated from the standard Gaussian distribution, initializing the edge weights to zero 
 It will print out the type of neural network followed by the width then the prediction error for the train and test data. 
+
+After the neural network from scratch has finished running it will then run the neural network implemented using pytorch.
+it will use two activation functions: tanh and RELU
+the will vary from {3, 5, 9} and width will vary from {5, 10, 25, 50, 100}
+it will print the type of activation function followed by the depth then width, and then the train/test prediction errors.
